@@ -1,4 +1,4 @@
-// hacked up the pako stuff so it was an odd global variable 
+import * as pako from  'pako'
 var UPNG = (function() {
 	
 	var _bin = {
