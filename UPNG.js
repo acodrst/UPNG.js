@@ -578,7 +578,7 @@ if(G>r)r=G;i++}while(i<y){A[i<<1]=0;A[(i<<1)+1]=0;i++}return r}return v}();
 		var leng = 8 + (16+5+4) /*+ (9+4)*/ + (anim ? 20 : 0);
 		if(tabs["sRGB"]!=null) leng += 8+1+4;
 		if(tabs["pHYs"]!=null) leng += 8+9+4;
-		if(tabs["iCCP"]!=null) {  cicc = ʭ.cpl.cmpr.deflate(tabs["iCCP"]);  leng += 8 + 11 + 2 + cicc.length + 4;  }
+		if(tabs["iCCP"]!=null) {  cicc = pako.deflate(tabs["iCCP"]);  leng += 8 + 11 + 2 + cicc.length + 4;  }
 		if(nimg.ctype==3) {
 			var dl = nimg.plte.length;
 			for(var i=0; i<dl; i++) if((nimg.plte[i]>>>24)!=255) pltAlpha = true;
@@ -920,7 +920,7 @@ if(G>r)r=G;i++}while(i<y){A[i<<1]=0;A[(i<<1)+1]=0;i++}return r}return v}();
 		var time = Date.now();
 		for(var i=0; i<ftry.length; i++) {
 			for(var y=0; y<h; y++) _filterLine(data, img, y, bpl, bpp, ftry[i]);
-			fls.push(ʭ.cpl.cmpr["deflate"](data,opts));
+			fls.push(pako.deflate(data,opts));
 		}
 		
 		var ti, tsize=1e9;
