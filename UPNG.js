@@ -170,7 +170,7 @@ var UPNG = (function () {
       )
     }
   }
-  function compress(bufs, w, h, ps, prms) // prms:  onlyBlend, minBits, forbidPlte
+  function compress(bufs, w, h, ps, prms)
   {
     var onlyBlend = prms[0], evenCrd = prms[1], forbidPrev = prms[2]
     var ctype = 6, depth = 8, alphaAnd = 255
@@ -264,7 +264,7 @@ var UPNG = (function () {
         }
         if (tstp == 1) frms[j - 1].dispose = 2
         nimg = new Uint8Array(nw * nh * 4)
-      } else nimg = cimg.slice(0) // img may be rewritten further ... don't rewrite input
+      } else nimg = cimg.slice(0)
       frms.push({
         rect: { x: nx, y: ny, width: nw, height: nh },
         img: nimg,
@@ -281,7 +281,6 @@ var UPNG = (function () {
         var maX = Math.max(r0.x + r0.width, r1.x + r1.width),
           maY = Math.max(r0.y + r0.height, r1.y + r1.height)
         var r = { x: miX, y: miY, width: maX - miX, height: maY - miY }
-
         frms[j - 1].dispose = 1
         if (j - 1 != 0) {
           _updateFrame(bufs, w, h, frms, j - 1, r, evenCrd)
