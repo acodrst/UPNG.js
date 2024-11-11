@@ -152,15 +152,7 @@ var UPNG = (function () {
     for (var i = 0; i < out.frames.length; i++) {
       var frm = out.frames[i], nh = frm.rect.height
       var fdata = new Uint8Array(nh * frm.bpl + nh)
-      frm.cimg = _filterZero(
-        frm.img,
-        nh,
-        frm.bpp,
-        frm.bpl,
-        fdata,
-        filter,
-        levelZero,
-      )
+      frm.cimg = _filterZero( frm.img, nh, frm.bpp, frm.bpl, fdata, filter, levelZero,)
     }
   }
   function compress(bufs, w, h, ps, prms)
