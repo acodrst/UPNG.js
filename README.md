@@ -1,0 +1,1 @@
+I just trimmed up the work by the Photopea folks for my needs and exported in an ESM way. Note that Photopea has not packaged encodeLL fully.  I imagine that eventually they will, and their export will work differently.  At that point, I'll just use theirs.

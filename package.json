@@ -1,11 +1,14 @@
 {
   "name": "upng-js",
-  "version": "2.2.0",
-  "homepage": "https://github.com/photopea/UPNG.js",
-  "license": "MIT",
-"repository": {
-                "type": "git",
-                "url": "git@github.com:acodrst/UPNG.js.git"
-        },
-  "main": "UPNG"
+    "version": "2.2.0",
+    "homepage": "https://github.com/photopea/UPNG.js",
+    "license": "MIT",
+    "repository": {
+      "type": "git",
+      "url": "git@github.com:acodrst/UPNG.js.git"
+    },
+    "main": "UPNG",
+    "dependencies": {
+      "pako": "^2.1.0"
+    }
 }

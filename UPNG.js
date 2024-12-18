@@ -185,4 +185,4 @@ var UPNG = (function () {
   }
   UPNG.encodeLL = encodeLL
 })()
-export { UPNG }
+export UPNG 
