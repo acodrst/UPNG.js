@@ -78,13 +78,16 @@ var UPNG = (function () {
       return crcLib.update(0xffffffff, b, o, l) ^ 0xffffffff
     },
   }
-  function encode(bufs, w, h, ps, dels, tabs, forbidPlte) {
-    if (ps == null) ps = 0
-    if (forbidPlte == null) forbidPlte = false
-    var nimg = compress(bufs, w, h, ps, [ false, false, false, 0, forbidPlte, false, ])
-    compressPNG(nimg, -1)
-    return _main(nimg, w, h, dels, tabs)
-  }
+  function encodeLL(bufs, w, h, cc, ac, depth, dels, tabs) {
+		var nimg = {  ctype: 0 + (cc==1 ? 0 : 2) + (ac==0 ? 0 : 4),      depth: depth,  frames: []  };
+		var bipp = (cc+ac)*depth, bipl = bipp * w;
+		for(var i=0; i<bufs.length; i++)
+			nimg.frames.push({  rect:{x:0,y:0,width:w,height:h},img:new Uint8Array(bufs[i]), blend:0,
+    dispose:1, bpp:Math.ceil(bipp/8), bpl:Math.ceil(bipl/8)  });
+		compressPNG(nimg, 0, true);
+		var out = _main(nimg, w, h, dels, tabs);
+		return out;
+	}
   function _main(nimg, w, h, dels, tabs) {
     if (tabs == null) tabs = {}
     var crc = crcLib.crc,
@@ -155,161 +158,6 @@ var UPNG = (function () {
       frm.cimg = _filterZero( frm.img, nh, frm.bpp, frm.bpl, fdata, filter, levelZero,)
     }
   }
-  function compress(bufs, w, h, ps, prms)
-  {
-    var onlyBlend = prms[0], evenCrd = prms[1], forbidPrev = prms[2]
-    var ctype = 6, depth = 8, alphaAnd = 255
-    for (var j = 0; j < bufs.length; j++) {
-      var img = new Uint8Array(bufs[j]), ilen = img.length
-      for (var i = 0; i < ilen; i += 4) alphaAnd &= img[i + 3]
-    }
-    var frms = framize(bufs, w, h, onlyBlend, evenCrd, forbidPrev)
-    var cmap = {}, plte = [], inds = []
-    for (var j = 0; j < frms.length; j++) {
-      var frm = frms[j],
-        img32 = new Uint32Array(frm.img.buffer),
-        nw = frm.rect.width,
-        ilen = img32.length
-      var ind = new Uint8Array(ilen)
-      inds.push(ind)
-      for (var i = 0; i < ilen; i++) {
-        var c = img32[i]
-        if (i != 0 && c == img32[i - 1]) ind[i] = ind[i - 1]
-        else if (i > nw && c == img32[i - nw]) ind[i] = ind[i - nw]
-        else {
-          var cmc = cmap[c]
-          if (cmc == null) {
-            cmap[c] = cmc = plte.length
-            plte.push(c)
-            if (plte.length >= 300) break
-          }
-          ind[i] = cmc
-        }
-      }
-    }
-    var cc = plte.length
-    depth = 8
-    for (var j = 0; j < frms.length; j++) {
-      var frm = frms[j], nw = frm.rect.width
-      var cimg = frm.img
-      var bpl = 4 * nw, bpp = 4
-      frm.img = cimg
-      frm.bpl = bpl
-      frm.bpp = bpp
-    }
-    return { ctype: ctype, depth: depth, plte: plte, frames: frms }
-  }
-  function framize(bufs, w, h, alwaysBlend, evenCrd, forbidPrev) {
-    var frms = []
-    for (var j = 0; j < bufs.length; j++) {
-      var cimg = new Uint8Array(bufs[j]), cimg32 = new Uint32Array(cimg.buffer)
-      var nimg
-      var nx = 0, ny = 0, nw = w, nh = h, blend = alwaysBlend ? 1 : 0
-      if (j != 0) {
-        var tlim =
-            (forbidPrev || alwaysBlend || j == 1 || frms[j - 2].dispose != 0)
-              ? 1
-              : 2,
-          tstp = 0,
-          tarea = 1e9
-        for (var it = 0; it < tlim; it++) {
-          var p32 = new Uint32Array(bufs[j - 1 - it])
-          var mix = w, miy = h, max = -1, may = -1
-          for (var y = 0; y < h; y++) {
-            for (var x = 0; x < w; x++) {
-              var i = y * w + x
-              if (cimg32[i] != p32[i]) {
-                if (x < mix) mix = x
-                if (x > max) max = x
-                if (y < miy) miy = y
-                if (y > may) may = y
-              }
-            }
-          }
-          if (max == -1) {
-            mix =
-              miy =
-              max =
-              may =
-                0
-          }
-          if (evenCrd) {
-            if ((mix & 1) == 1) mix--
-            if ((miy & 1) == 1) miy--
-          }
-          var sarea = (max - mix + 1) * (may - miy + 1)
-          if (sarea < tarea) {
-            tarea = sarea
-            tstp = it
-            nx = mix
-            ny = miy
-            nw = max - mix + 1
-            nh = may - miy + 1
-          }
-        }
-        if (tstp == 1) frms[j - 1].dispose = 2
-        nimg = new Uint8Array(nw * nh * 4)
-      } else nimg = cimg.slice(0)
-      frms.push({
-        rect: { x: nx, y: ny, width: nw, height: nh },
-        img: nimg,
-        blend: blend,
-        dispose: 0,
-      })
-    }
-    if (alwaysBlend) {
-      for (var j = 0; j < frms.length; j++) {
-        var frm = frms[j]
-        if (frm.blend == 1) continue
-        var r0 = frm.rect, r1 = frms[j - 1].rect
-        var miX = Math.min(r0.x, r1.x), miY = Math.min(r0.y, r1.y)
-        var maX = Math.max(r0.x + r0.width, r1.x + r1.width),
-          maY = Math.max(r0.y + r0.height, r1.y + r1.height)
-        var r = { x: miX, y: miY, width: maX - miX, height: maY - miY }
-        frms[j - 1].dispose = 1
-        if (j - 1 != 0) {
-          _updateFrame(bufs, w, h, frms, j - 1, r, evenCrd)
-        }
-        _updateFrame(bufs, w, h, frms, j, r, evenCrd)
-      }
-    }
-    var area = 0
-    if (bufs.length != 1) {
-      for (var i = 0; i < frms.length; i++) {
-        var frm = frms[i]
-        area += frm.rect.width * frm.rect.height
-      }
-    }
-    return frms
-  }
-  function _updateFrame(bufs, w, h, frms, i, r, evenCrd) {
-    var U8 = Uint8Array, U32 = Uint32Array
-    var cimg = new U8(bufs[i]), cimg32 = new U32(cimg.buffer)
-    var mix = w, miy = h, max = -1, may = -1
-    for (var y = 0; y < r.height; y++) {
-      for (var x = 0; x < r.width; x++) {
-        var cx = r.x + x, cy = r.y + y
-        var j = cy * w + cx, cc = cimg32[j]
-      }
-    }
-    if (max == -1) {
-      mix =
-        miy =
-        max =
-        may =
-          0
-    }
-    if (evenCrd) {
-      if ((mix & 1) == 1) mix--
-      if ((miy & 1) == 1) miy--
-    }
-    r = { x: mix, y: miy, width: max - mix + 1, height: may - miy + 1 }
-    var fr = frms[i]
-    fr.rect = r
-    fr.blend = 1
-    fr.img = new Uint8Array(r.width * r.height * 4)
-  }
-
   function _filterZero(img, h, bpp, bpl, data, filter, levelZero) {
     var fls = [], ftry = [0, 1, 2, 3, 4]
     if (filter != -1) ftry = [filter]
@@ -335,7 +183,6 @@ var UPNG = (function () {
     di++
     data.set(new Uint8Array(img.buffer, i, bpl), di)
   }
-  UPNG.encode = encode
-  UPNG.encode.compress = compress
+  UPNG.encodeLL = encodeLL
 })()
 export { UPNG }
